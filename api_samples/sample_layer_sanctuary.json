@@ -1,0 +1,55 @@
+{
+  "type": "Feature",
+  "id": "GEO-TCFS-SANCTUARY-BOUNDARY",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          72.96,
+          19.08
+        ],
+        [
+          72.99,
+          19.08
+        ],
+        [
+          73.01,
+          19.14
+        ],
+        [
+          73.0,
+          19.18
+        ],
+        [
+          72.97,
+          19.18
+        ],
+        [
+          72.95,
+          19.13
+        ],
+        [
+          72.96,
+          19.08
+        ]
+      ]
+    ]
+  },
+  "properties": {
+    "layer_id": "thane_creek_sanctuary",
+    "name": "Thane Creek Flamingo Sanctuary (TCFS)",
+    "designation": "Ramsar Site #2490 & Wildlife Sanctuary",
+    "state": "Maharashtra",
+    "district": "Mumbai Suburban / Thane",
+    "gazetted_area_sqkm": 16.9,
+    "mangrove_cover_sqkm": 8.96,
+    "dominant_species": "Avicennia marina / Rhizophora mucronata",
+    "center_lat": 19.13,
+    "center_lon": 72.98,
+    "stroke_color": "#059669",
+    "fill_color": "#10b981",
+    "fill_opacity": 0.25,
+    "source": "Maharashtra Forest Department Mangrove Cell (2020)"
+  }
+}
