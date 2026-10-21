@@ -9,8 +9,7 @@
 **Target Environment:** BHIV Governed Data Platform / VANA Ecosystem  
 **Date:** October 2026  
 
----
-
+--- 
 ## 1. Executive Summary & Core Mission
 
 Ansh’s mission is to establish the authoritative governance and constitutional control layer around **MASTERDB** while working directly with Kavy.

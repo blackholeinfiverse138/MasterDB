@@ -174,3 +174,32 @@ python3 masterdb_test_consumer.py
 ```bash
 python3 masterdb_governance_engine.py
 ```
+
+### 3. Run the Hardened Parikshak Test Suite (T-GOV-F01):
+```bash
+pytest -v
+```
+
+### 4. Run with Code Coverage Report:
+```bash
+pytest --cov=evaluation_engine --cov=task_selector --cov=integrations --cov=security --cov=api --cov-report=term-missing
+```
+
+### 5. Launch the Production FastAPI Convergence Microservice:
+```bash
+uvicorn api.production:app --host 0.0.0.0 --port 8000 --reload
+```
+
+---
+
+## 7. Parikshak T-GOV-F01 Remediation & Quality Gates
+
+This repository has been comprehensively hardened under **Task ID `T-GOV-F01`** to remediate previous `schema_violation` findings:
+
+1. **Strict Dependency Pinning:** All dependencies in `requirements.txt` are pinned with exact `==` versions.
+2. **Production API (`api/production.py`):** Unified FastAPI microservice enforcing strict Pydantic schemas (`extra="forbid"`).
+3. **Deterministic Governance Rule Engine (`evaluation_engine/rule_engine.py`):** 10 Canonical Eligibility Gates, 6-tuple access policies, synthetic fixture quarantine.
+4. **Convergence Review Orchestrator (`task_selector/review_orchestrator.py`):** 9-stage review lifecycle, 4 decision states, Section 16 independent audit disagreement protocol.
+5. **Security & Zero-Crash Error Boundary (`security/middleware.py`):** `ErrorBoundaryMiddleware` guarantees zero unhandled 500 exceptions, role enforcement (`require_role`), and memory token replay prevention.
+6. **Deterministic Execution:** 50 consecutive runs produce identical SHA-256 state hashes (`test_deterministic_execution.py`).
+7. **Verification Artifacts:** Standardized `REVIEW_PACKET.md`, `CODE_PACKET.md`, and `CODE_INDEX.md`.
