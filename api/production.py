@@ -128,6 +128,32 @@ class TokenVerificationRequest(StrictBaseModel):
     purpose: str = Field(default="api_governance_call", description="Declared token consumption purpose")
 
 
+
+class ParikshakReviewUpdateRequest(StrictBaseModel):
+    review_reference: str = Field(..., description="Canonical review reference ID")
+    task_id: str = Field(..., description="Evaluated task ID")
+    candidate_id: str = Field(..., description="Candidate or agent identifier")
+    score: int = Field(..., ge=0, le=100, description="Evaluation score")
+    readiness_percentage: float = Field(..., ge=0.0, le=100.0, description="Readiness percentage")
+    review_summary: str = Field(..., description="Executive review summary")
+    timeline_commentary: Optional[str] = Field(default=None, description="Timeline notes")
+    next_task_reference: Optional[str] = Field(default=None, description="Assigned next task ID")
+    trace_id: str = Field(..., description="Cryptographic audit trace ID")
+
+
+class ParikshakCandidateHistoryRequest(StrictBaseModel):
+    candidate_id: str = Field(..., description="Candidate or agent identifier")
+    task_id: str = Field(..., description="Evaluated task ID")
+    evaluation_result: str = Field(..., description="PASS, BORDERLINE, or FAIL")
+    score: int = Field(..., ge=0, le=100, description="Evaluation score")
+    next_task_id: Optional[str] = Field(default=None, description="Successor task ID")
+
+
+# Global In-Memory Sync Ledgers for Parikshak
+_PARIKSHAK_REVIEWS_LEDGER: List[Dict[str, Any]] = []
+_PARIKSHAK_CANDIDATE_HISTORY: List[Dict[str, Any]] = []
+
+
 class StatusResponse(StrictBaseModel):
     active_governance_rules: int = Field(..., description="Number of canonical evaluation rules active")
     registered_datasets: int = Field(..., description="Total audited datasets in state")
@@ -345,6 +371,40 @@ async def get_governance_status() -> StatusResponse:
 
 
 # Clean shutdown and reset helper (for test runners)
+
+# ---------------------------------------------------------------------------
+# Parikshak Integration Sync Endpoints
+# ---------------------------------------------------------------------------
+
+@app.post("/api/v1/masterdb/reviews/update", tags=["Parikshak Sync"])
+async def update_task_review_record(request: ParikshakReviewUpdateRequest) -> Dict[str, Any]:
+    """Ingests and records canonical engineering review summaries from Parikshak."""
+    record = request.model_dump()
+    record["received_at"] = time.time()
+    _PARIKSHAK_REVIEWS_LEDGER.append(record)
+    return {
+        "status": "SUCCESS",
+        "message": f"Review {request.review_reference} recorded in MasterDB",
+        "review_reference": request.review_reference,
+        "score": request.score,
+        "sync_status": "SYNCED"
+    }
+
+
+@app.post("/api/v1/masterdb/candidate/history", tags=["Parikshak Sync"])
+async def update_candidate_history(request: ParikshakCandidateHistoryRequest) -> Dict[str, Any]:
+    """Ingests and records candidate progression history from Parikshak."""
+    record = request.model_dump()
+    record["received_at"] = time.time()
+    _PARIKSHAK_CANDIDATE_HISTORY.append(record)
+    return {
+        "status": "SUCCESS",
+        "message": f"Candidate history for {request.candidate_id} recorded in MasterDB",
+        "candidate_id": request.candidate_id,
+        "sync_status": "SYNCED"
+    }
+
+
 @app.post("/api/v1/governance/reset", tags=["System Internal"])
 async def reset_engine_state(
     current_role: str = Depends(require_role([UserRole.MASTERDB_ADMIN, UserRole.ANSH_GOV_LEAD]))

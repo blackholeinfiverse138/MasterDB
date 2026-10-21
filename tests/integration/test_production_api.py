@@ -199,3 +199,38 @@ def test_error_boundary_middleware_catches_all_exceptions(client: TestClient):
     data = resp.json()
     assert data["status"] == "error"
     assert "X-Trace-ID" in resp.headers
+
+
+def test_parikshak_reviews_update_endpoint(client):
+    payload = {
+        "review_reference": "rev-test-001",
+        "task_id": "T-GOV-F01",
+        "candidate_id": "Ansh Gupta",
+        "score": 100,
+        "readiness_percentage": 100.0,
+        "review_summary": "Parikshak Evaluation: PASS",
+        "timeline_commentary": "Hardened governance passed with zero defects.",
+        "next_task_reference": "T-GOV-002",
+        "trace_id": "trace-ansh-001"
+    }
+    response = client.post("/api/v1/masterdb/reviews/update", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    assert data["review_reference"] == "rev-test-001"
+    assert data["score"] == 100
+
+
+def test_parikshak_candidate_history_endpoint(client):
+    payload = {
+        "candidate_id": "Ansh Gupta",
+        "task_id": "T-GOV-F01",
+        "evaluation_result": "PASS",
+        "score": 100,
+        "next_task_id": "T-GOV-002"
+    }
+    response = client.post("/api/v1/masterdb/candidate/history", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    assert data["candidate_id"] == "Ansh Gupta"
