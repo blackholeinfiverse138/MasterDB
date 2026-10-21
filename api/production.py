@@ -51,6 +51,11 @@ from task_selector.state_machine import (
     OCCConflictError,
     InvalidStateTransitionError,
 )
+from integrations.fin_vana_integrator import (
+    FinVanaIntegrationEngine,
+    CarbonUnderwritingRequest,
+    CarbonUnderwritingResult,
+)
 from security.middleware import (
     ErrorBoundaryMiddleware,
     UserRole,
@@ -69,7 +74,7 @@ review_orchestrator = MasterDBReviewOrchestrator()
 llm_client = LocalLLMClient()
 pravah_engine = PravahReplayEngine()
 concurrency_engine = ConcurrencyGovernanceEngine(pravah_engine=pravah_engine)
-
+fin_vana_engine = FinVanaIntegrationEngine()
 
 # System startup timestamp
 START_TIME = time.time()
@@ -162,6 +167,18 @@ class ParikshakCandidateHistoryRequest(StrictBaseModel):
     evaluation_result: str = Field(..., description="PASS, BORDERLINE, or FAIL")
     score: int = Field(..., ge=0, le=100, description="Evaluation score")
     next_task_id: Optional[str] = Field(default=None, description="Successor task ID")
+
+
+class VanaForestCoverQueryRequest(StrictBaseModel):
+    consumer_actor: str = Field(..., min_length=2, max_length=128, description="Requesting consumer (e.g., VANA, FIN)")
+    district: Optional[str] = Field(default=None, description="Optional Maharashtra district filter (e.g. Pune, Thane, Ratnagiri)")
+    purpose: str = Field(default="DISTRICT_CANOPY_ANALYSIS", description="Declared governance purpose")
+
+
+class VanaMangroveQueryRequest(StrictBaseModel):
+    consumer_actor: str = Field(..., min_length=2, max_length=128, description="Requesting consumer (e.g., VANA, FIN)")
+    zone_query: Optional[str] = Field(default=None, description="Optional sanctuary zone filter (e.g. Airoli, Vashi, Bhandup)")
+    purpose: str = Field(default="BLUE_CARBON_QUANTIFICATION", description="Declared governance purpose")
 
 
 # Global In-Memory Sync Ledgers for Parikshak
@@ -525,6 +542,56 @@ async def update_candidate_history(request: ParikshakCandidateHistoryRequest) ->
     }
 
 
+@app.post("/api/v1/integration/vana/forest-cover/query", tags=["VANA Real Data Integration"])
+async def query_vana_forest_cover(
+    request: VanaForestCoverQueryRequest,
+    current_role: str = Depends(require_role([UserRole.GOVERNOR, UserRole.AUDITOR, UserRole.STEWARD, UserRole.CONSUMER, UserRole.MASTERDB_ADMIN, UserRole.ANSH_GOV_LEAD]))
+) -> Dict[str, Any]:
+    """Queries real FSI ISFR 2023 Maharashtra forest cover records with MDU ontology metadata."""
+    try:
+        return fin_vana_engine.query_vana_forest_cover(
+            consumer_actor=request.consumer_actor,
+            district=request.district,
+            purpose=request.purpose
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@app.post("/api/v1/integration/vana/mangrove-biomass/query", tags=["VANA Real Data Integration"])
+async def query_vana_mangrove_biomass(
+    request: VanaMangroveQueryRequest,
+    current_role: str = Depends(require_role([UserRole.GOVERNOR, UserRole.AUDITOR, UserRole.STEWARD, UserRole.CONSUMER, UserRole.MASTERDB_ADMIN, UserRole.ANSH_GOV_LEAD]))
+) -> Dict[str, Any]:
+    """Queries real Thane Creek mangrove above-ground biomass records with allometric survey data."""
+    try:
+        return fin_vana_engine.query_vana_mangrove_biomass(
+            consumer_actor=request.consumer_actor,
+            zone_query=request.zone_query,
+            purpose=request.purpose
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@app.post("/api/v1/integration/fin/carbon-underwrite", response_model=CarbonUnderwritingResult, tags=["FIN Real Data Integration"])
+async def execute_fin_carbon_underwriting(
+    request: CarbonUnderwritingRequest,
+    current_role: str = Depends(require_role([UserRole.GOVERNOR, UserRole.AUDITOR, UserRole.STEWARD, UserRole.CONSUMER, UserRole.MASTERDB_ADMIN, UserRole.ANSH_GOV_LEAD]))
+) -> CarbonUnderwritingResult:
+    """Executes real ESG carbon underwriting calculation over MasterDB canonical records."""
+    try:
+        return fin_vana_engine.execute_fin_carbon_underwriting(request)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@app.get("/api/v1/integration/fin-vana/catalog", tags=["FIN / VANA Real Data Integration"])
+async def get_fin_vana_catalog() -> Dict[str, Any]:
+    """Returns the full catalog of integrated real datasets and supported capabilities for FIN and VANA."""
+    return fin_vana_engine.get_catalog()
+
+
 @app.post("/api/v1/governance/reset", tags=["System Internal"])
 async def reset_engine_state(
     current_role: str = Depends(require_role([UserRole.MASTERDB_ADMIN, UserRole.ANSH_GOV_LEAD]))
@@ -534,4 +601,5 @@ async def reset_engine_state(
     reset_spent_tokens()
     pravah_engine.reset_for_tests()
     concurrency_engine.reset_for_tests()
+    fin_vana_engine.underwriting_ledger.clear()
     return {"status": "reset_completed"}
