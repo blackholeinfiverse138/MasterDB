@@ -39,6 +39,18 @@ from integrations.local_llm_client import (
     LocalLLMClient,
     LLMVerificationResponse,
 )
+from evaluation_engine.pravah_streaming import (
+    PravahEventType,
+    PravahEvent,
+    PravahReplayEngine,
+)
+from task_selector.state_machine import (
+    GovernanceLifecycleState,
+    ConcurrencyRecord,
+    ConcurrencyGovernanceEngine,
+    OCCConflictError,
+    InvalidStateTransitionError,
+)
 from security.middleware import (
     ErrorBoundaryMiddleware,
     UserRole,
@@ -55,6 +67,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(na
 rule_engine = MasterDBRuleEngine()
 review_orchestrator = MasterDBReviewOrchestrator()
 llm_client = LocalLLMClient()
+pravah_engine = PravahReplayEngine()
+concurrency_engine = ConcurrencyGovernanceEngine(pravah_engine=pravah_engine)
+
 
 # System startup timestamp
 START_TIME = time.time()
@@ -152,6 +167,28 @@ class ParikshakCandidateHistoryRequest(StrictBaseModel):
 # Global In-Memory Sync Ledgers for Parikshak
 _PARIKSHAK_REVIEWS_LEDGER: List[Dict[str, Any]] = []
 _PARIKSHAK_CANDIDATE_HISTORY: List[Dict[str, Any]] = []
+
+
+class PravahStreamEventRequest(StrictBaseModel):
+    trace_id: str = Field(..., min_length=4, max_length=128, description="Distributed trace ID")
+    event_type: PravahEventType = Field(..., description="Canonical Pravah event type")
+    payload: Dict[str, Any] = Field(..., description="Event payload data")
+    source_system: str = Field(default="MASTERDB", min_length=2, max_length=64, description="Originating system")
+    destination: str = Field(default="PRAVAH_REPLAY_LEDGER", min_length=2, max_length=64, description="Target subsystem")
+
+
+class PravahReplayRequest(StrictBaseModel):
+    from_sequence: int = Field(default=1, ge=1, description="Start sequence for replay")
+    to_sequence: Optional[int] = Field(default=None, ge=1, description="End sequence for replay")
+
+
+class ConcurrencyTransitionRequest(StrictBaseModel):
+    entity_id: str = Field(..., min_length=3, max_length=128, description="Unique entity identifier")
+    expected_version: int = Field(..., ge=1, description="Expected OCC record version")
+    target_state: GovernanceLifecycleState = Field(..., description="Target DFA lifecycle state")
+    actor: str = Field(..., min_length=2, max_length=64, description="Transition operator")
+    trace_id: str = Field(..., min_length=4, max_length=128, description="Trace identifier")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Supplementary transition metadata")
 
 
 class StatusResponse(StrictBaseModel):
@@ -370,6 +407,89 @@ async def get_governance_status() -> StatusResponse:
     )
 
 
+# ---------------------------------------------------------------------------
+# Pravah Asynchronous Streaming & Replay Ledger Endpoints (T-GOV-002)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/v1/pravah/stream", response_model=PravahEvent, tags=["Pravah Replay Ledger"])
+async def stream_pravah_event(
+    request: PravahStreamEventRequest,
+    current_role: str = Depends(require_role([UserRole.GOVERNOR, UserRole.AUDITOR, UserRole.STEWARD, UserRole.MASTERDB_ADMIN, UserRole.ANSH_GOV_LEAD, UserRole.CONSUMER]))
+) -> PravahEvent:
+    """Streams an event to the append-only Pravah replay ledger with cryptographic hash chaining."""
+    event = pravah_engine.append_event(
+        trace_id=request.trace_id,
+        event_type=request.event_type,
+        payload=request.payload,
+        source_system=request.source_system,
+        destination=request.destination
+    )
+    return event
+
+
+@app.post("/api/v1/pravah/replay", response_model=List[PravahEvent], tags=["Pravah Replay Ledger"])
+async def replay_pravah_events(
+    request: PravahReplayRequest,
+    current_role: str = Depends(require_role([UserRole.GOVERNOR, UserRole.AUDITOR, UserRole.STEWARD, UserRole.MASTERDB_ADMIN, UserRole.ANSH_GOV_LEAD, UserRole.CONSUMER]))
+) -> List[PravahEvent]:
+    """Replays events deterministically from specified sequence range."""
+    return pravah_engine.replay(from_sequence=request.from_sequence, to_sequence=request.to_sequence)
+
+
+@app.get("/api/v1/pravah/integrity", tags=["Pravah Replay Ledger"])
+async def verify_pravah_integrity() -> Dict[str, Any]:
+    """Verifies cryptographic hash continuity and monotonic sequencing of Pravah replay ledger."""
+    return pravah_engine.verify_integrity()
+
+
+# ---------------------------------------------------------------------------
+# Strict Concurrency Control (OCC) & DFA State Machine Endpoints (T-GOV-002)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/v1/governance/concurrency/transition", response_model=ConcurrencyRecord, tags=["Concurrency Governance"])
+async def transition_concurrency_state(
+    request: ConcurrencyTransitionRequest,
+    current_role: str = Depends(require_role([UserRole.GOVERNOR, UserRole.AUDITOR, UserRole.STEWARD, UserRole.MASTERDB_ADMIN, UserRole.ANSH_GOV_LEAD]))
+) -> ConcurrencyRecord:
+    """
+    Executes an Optimistic Concurrency Control (OCC) protected state transition.
+    Returns 409 Conflict if expected version does not match current version.
+    Returns 422 Unprocessable if attempted transition violates DFA rules.
+    """
+    try:
+        record = concurrency_engine.transition_state(
+            entity_id=request.entity_id,
+            expected_version=request.expected_version,
+            target_state=request.target_state,
+            actor=request.actor,
+            trace_id=request.trace_id,
+            metadata=request.metadata
+        )
+        return record
+    except OCCConflictError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=e.message
+        )
+    except InvalidStateTransitionError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=e.message
+        )
+
+
+@app.get("/api/v1/governance/concurrency/state/{entity_id}", tags=["Concurrency Governance"])
+async def get_concurrency_state(entity_id: str) -> Dict[str, Any]:
+    """Retrieves current OCC state, version, and transition hash for a governance entity."""
+    record = concurrency_engine.get_entity_state(entity_id)
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Entity '{entity_id}' not found in concurrency governance registry."
+        )
+    return record.model_dump()
+
+
 # Clean shutdown and reset helper (for test runners)
 
 # ---------------------------------------------------------------------------
@@ -412,4 +532,6 @@ async def reset_engine_state(
     """Resets in-memory registries for clean test execution."""
     rule_engine.dataset_registry.clear()
     reset_spent_tokens()
+    pravah_engine.reset_for_tests()
+    concurrency_engine.reset_for_tests()
     return {"status": "reset_completed"}

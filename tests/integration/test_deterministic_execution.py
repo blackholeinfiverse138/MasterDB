@@ -86,3 +86,46 @@ def test_50_consecutive_runs_api_health_deterministic_state(client: TestClient):
     assert len(hashes) == 50
     assert len(set(hashes)) == 1
     assert len(hashes[0]) == 64
+
+
+def test_50_consecutive_runs_pravah_streaming_deterministic_hash():
+    """Verify that 50 consecutive runs of Pravah streaming state hashing produce identical SHA-256 hashes."""
+    from evaluation_engine.pravah_streaming import PravahReplayEngine, PravahEventType
+    engine = PravahReplayEngine(ledger_path="storage/test_det_pravah.jsonl")
+    engine.reset_for_tests()
+    for i in range(1, 4):
+        engine.append_event(
+            trace_id=f"trace-fixed-{i}",
+            event_type=PravahEventType.DATASET_INGESTION,
+            payload={"dataset": f"geo_{i}"},
+            event_id=f"evt-fixed-{i:06d}"
+        )
+
+    hashes = []
+    for _ in range(50):
+        h = engine.compute_ledger_state_hash()
+        hashes.append(h)
+
+    engine.reset_for_tests()
+    assert len(hashes) == 50
+    assert len(set(hashes)) == 1
+    assert len(hashes[0]) == 64
+
+
+def test_50_consecutive_runs_concurrency_governance_deterministic_hash():
+    """Verify that 50 consecutive runs of Concurrency Governance state hashing produce identical SHA-256 hashes."""
+    from task_selector.state_machine import ConcurrencyGovernanceEngine, GovernanceLifecycleState
+    engine = ConcurrencyGovernanceEngine()
+    engine.reset_for_tests()
+    engine.register_entity(entity_id="ds_det_01", initial_state=GovernanceLifecycleState.INIT)
+    engine.register_entity(entity_id="ds_det_02", initial_state=GovernanceLifecycleState.VALIDATING)
+
+    hashes = []
+    for _ in range(50):
+        h = engine.compute_state_hash()
+        hashes.append(h)
+
+    engine.reset_for_tests()
+    assert len(hashes) == 50
+    assert len(set(hashes)) == 1
+    assert len(hashes[0]) == 64
