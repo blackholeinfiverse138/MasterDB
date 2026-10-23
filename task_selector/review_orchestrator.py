@@ -309,7 +309,7 @@ class MasterDBReviewOrchestrator:
             capability="MasterDB Convergence",
             capability_name="MasterDB Convergence",
             compliance_score=100.0 if final_decision == DecisionState.APPROVED else 45.0,
-            current_stage=ReviewStage.STAGE_9_HANDOVER if final_decision == DecisionState.APPROVED else ReviewStage.STAGE_4_CANDIDATE_FIXES,
+            current_stage=ReviewStage.STAGE_9_HANDOVER if final_decision == DecisionState.APPROVED else ReviewStage.STAGE_4_PLATFORM_FIXES,
             decision_state=final_decision,
             audit_notes=f"Final decision: {final_decision.value}",
             state_hash=hashlib.sha256(f"{review_id}:{final_decision.value}".encode()).hexdigest()

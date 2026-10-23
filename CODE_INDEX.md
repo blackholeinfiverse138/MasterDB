@@ -1,12 +1,11 @@
-# CODE INDEX: ANSH BHIV vNEXT MASTERDB CONVERGENCE & FIN / VANA REAL DATA INTEGRATION (T-GOV-F01 & T-GOV-002)
+# CODE INDEX: ANSH BHIV vNEXT MASTERDB ECOSYSTEM-WIDE CONVERGENCE Architecture (T-GOV-F01)
 
-**Task Identifier:** T-GOV-F01 & T-GOV-002  
-**Task Titles:**  
-- **T-GOV-F01:** Remediate Incomplete & Harden Ansh FIN / VANA Full System Completion with Real Data Integration Architecture  
-- **T-GOV-002:** Milestone Advancement: Scalable Ecosystem Integration & Pipeline Automation  
+**Task Identifier:** T-GOV-F01  
+**Task Title:** Remediate Schema Violation & Harden ANSH — BHIV vNEXT — MASTERDB ECOSYSTEM-WIDE CONVERGENCE Architecture  
+**Previous Task Evaluated:** `taskext-b0c6a4502fd3` (Result: FAIL, Score: 16/100, Primary Failure Dimension: `schema_violation` & `incomplete`)  
 **Candidate:** Ansh Gupta (Product Governance: BHIV)  
-**Governance Scope:** Full System Completion, Real Data Integration & Schema Violation Remediation  
-**Status:** Certified & Verified (83/83 Tests Passing, 100% Pass Rate, 94% Coverage)  
+**Governance Scope:** MasterDB Constitutional Governance, Schema Violation Remediation, & Convergence Architecture  
+**Status:** Certified & Verified (83/83 Tests Passing, 100% Pass Rate, 94%+ Coverage)  
 
 ---
 

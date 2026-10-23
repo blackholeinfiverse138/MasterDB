@@ -1,26 +1,35 @@
 """
 Unit Tests for Parikshak Interoperability, Context Files, and Architecture Layers
 ==================================================================================
+Task ID: T-GOV-F01
+Candidate: Ansh Gupta (Product Governance: BHIV)
+Authority: MasterDB Data Governance & Constitutional Controls
+
 Verifies complete conformance with Parikshak evaluation criteria:
 - Review packet hard gate (4 sections in exact order)
 - 9 key context files presence and readability
 - Layer separation (api, service, model, core)
 - CanonicalDB and integration adapter functionality
 - Execution pipeline and governance service workflows
+- Strict schema validation (extra='forbid')
 """
 import os
 import pytest
 from fastapi.testclient import TestClient
 
 from api.production import app
-from models.schemas import BiotechAuditRequest, StrictBaseModel
+from models.schemas import (
+    MasterDBAuditRequest,
+    MasterDBEvaluationRequest,
+    BiotechAuditRequest,
+    StrictBaseModel,
+)
 from canonical_db.db import CanonicalDB
 from canonical_db.integration import MasterDBIntegrationAdapter, ParikshakSyncAdapter
 from services.governance_service import GovernanceService
-from evaluation_engine.execution_pipeline import BiotechExecutionPipeline
+from evaluation_engine.execution_pipeline import MasterDBExecutionPipeline, BiotechExecutionPipeline
 from task_selector.state_machine import GovernanceLifecycleState
 from pydantic import ValidationError
-
 
 client = TestClient(app)
 
@@ -93,10 +102,10 @@ def test_canonical_db_operations(tmp_path):
     assert event2["parent_event_hash"] == event["event_hash"]
 
     # Store and retrieve review
-    db.store_review("rev-1", "Sara", "pass", 100, "APPROVED", {"notes": "optimal"})
+    db.store_review("rev-1", "Ansh Gupta", "pass", 100, "APPROVED", {"notes": "optimal"})
     rec = db.get_review("rev-1")
     assert rec is not None
-    assert rec["candidate_id"] == "Sara"
+    assert rec["candidate_id"] == "Ansh Gupta"
     assert rec["score"] == 100
 
 
@@ -116,24 +125,33 @@ def test_governance_service_workflow(tmp_path):
     """Tests GovernanceService audit processing and OCC state transition."""
     gov_service = GovernanceService()
     valid_payload = {
-        "candidate": "Sara",
-        "formulation_type": "Liposomal Amphotericin B",
-        "ph_stability": 7.4,
-        "temperature_celsius": 4.0,
-        "assay_purity": 99.2,
-        "degradation_rate_per_month": 0.001,
-        "associated_drugs": ["Amphotericin B", "Doxorubicin"],
-        "primary_attributed_drug": "Amphotericin B",
+        "dataset_id": "DS-FSI-ISFR-2023-FOREST-COVER",
+        "dataset_name": "Forest Survey of India Maharashtra 2023",
+        "owner": "Ansh Gupta",
+        "custodian": "Forest Department",
+        "source": "FSI Statutory Publication ISBN 978-81-950073-9-4",
+        "provenance": "Government Gazette Publication",
+        "schema": {"columns": ["district", "forest_cover_sqkm"]},
+        "mdu_schema_ref": "mdu://ontology/environmental/v1.0/forest.schema.json",
+        "classification": "CANONICAL",
+        "sensitivity": "PUBLIC",
+        "access_policy": "POLICY-VANA-01",
+        "allowed_consumers": ["VANA", "FIN", "BHIV_CORE"],
+        "intended_use": "Forest cover monitoring and carbon underwriting",
+        "fingerprint": "f" * 64,
+        "lifecycle_status": "ACTIVE",
+        "approval_authority": "MASTERDB_CONSTITUTIONAL_COUNCIL",
+        "quality_status": "VALIDATED",
         "is_synthetic": False
     }
 
     rubric = gov_service.process_audit_submission(
         task_id="T-GOV-F01",
-        candidate_name="Sara",
-        capability_name="Formulation Stability",
+        candidate_name="Ansh Gupta",
+        capability_name="MasterDB Convergence",
         payload=valid_payload,
         trace_id="trace-gov-service-test-1",
-        query_drug="Amphotericin B"
+        governance_dimension="schema_and_eligibility"
     )
     assert rubric.overall_pass is True
     assert rubric.score >= 90
@@ -151,44 +169,62 @@ def test_governance_service_workflow(tmp_path):
 
 
 def test_execution_pipeline_evaluation():
-    """Tests BiotechExecutionPipeline end-to-end evaluation."""
-    pipe = BiotechExecutionPipeline()
+    """Tests MasterDBExecutionPipeline end-to-end evaluation."""
+    pipe = MasterDBExecutionPipeline()
     valid_payload = {
-        "candidate": "Sara",
-        "formulation_type": "Liposomal Amphotericin B",
-        "ph_stability": 7.4,
-        "temperature_celsius": 4.0,
-        "assay_purity": 99.2,
-        "degradation_rate_per_month": 0.001,
-        "associated_drugs": ["Amphotericin B", "Doxorubicin"],
-        "primary_attributed_drug": "Amphotericin B",
+        "dataset_id": "masterdb.spatial.survey_of_india.boundaries",
+        "dataset_name": "Survey of India Administrative Boundaries",
+        "owner": "Ansh Gupta",
+        "custodian": "Survey of India",
+        "source": "Official Survey of India Portal",
+        "provenance": "Official Survey of India Gazette",
+        "schema": {"columns": ["state_code", "district_code", "geometry"]},
+        "mdu_schema_ref": "mdu://ontology/spatial/v1.0/boundaries.schema.json",
+        "classification": "CANONICAL",
+        "sensitivity": "INTERNAL",
+        "access_policy": "POLICY-SPATIAL-01",
+        "allowed_consumers": ["BharatMala-GIS", "VANA", "MASTERDB"],
+        "intended_use": "Sovereign GIS Corridor Mapping",
+        "fingerprint": "b" * 64,
+        "lifecycle_status": "ACTIVE",
+        "approval_authority": "MASTERDB_CONSTITUTIONAL_COUNCIL",
+        "quality_status": "VALIDATED",
         "is_synthetic": False
     }
     result = pipe.execute_evaluation(
         task_id="T-GOV-F01",
-        candidate_name="Sara",
-        capability_name="Formulation Stability",
+        candidate_name="Ansh Gupta",
+        capability_name="MasterDB Convergence",
         payload=valid_payload,
         trace_id="trace-pipe-test-1",
-        query_drug="Amphotericin B"
+        governance_dimension="canonical_eligibility"
     )
     assert result["evaluation_result"] == "PASS"
     assert result["score"] >= 90
     assert result["failure_type"] is None
+
+    # Test backward compatibility alias
+    biotech_pipe = BiotechExecutionPipeline()
+    assert isinstance(biotech_pipe, MasterDBExecutionPipeline)
 
 
 def test_schemas_extra_forbid():
     """Tests that schemas strictly reject extraneous fields (schema_violation prevention)."""
     valid_data = {
         "task_id": "T-GOV-F01",
-        "candidate_name": "Sara",
-        "capability_name": "Formulation Stability",
-        "payload": {"test": "data"}
+        "candidate_name": "Ansh Gupta",
+        "capability_name": "MasterDB Convergence",
+        "payload": {"dataset_id": "DS-TEST-001"}
     }
-    req = BiotechAuditRequest(**valid_data)
+    req = MasterDBAuditRequest(**valid_data)
     assert req.task_id == "T-GOV-F01"
+    assert req.candidate_name == "Ansh Gupta"
 
     # Extraneous field must fail validation
+    with pytest.raises(ValidationError):
+        MasterDBAuditRequest(**{**valid_data, "unauthorized_extra_field": "illegal_value"})
+
+    # Backward compatibility alias must also reject extra fields
     with pytest.raises(ValidationError):
         BiotechAuditRequest(**{**valid_data, "unauthorized_extra_field": "illegal_value"})
 
@@ -198,20 +234,29 @@ def test_api_review_routes():
     headers = {"X-User-Role": "Auditor"}
     payload = {
         "task_id": "T-GOV-F01",
-        "candidate_name": "Sara",
-        "capability_name": "Formulation Stability",
+        "candidate_name": "Ansh Gupta",
+        "capability_name": "MasterDB Convergence",
         "payload": {
-            "candidate": "Sara",
-            "formulation_type": "Liposomal Amphotericin B",
-            "ph_stability": 7.4,
-            "temperature_celsius": 4.0,
-            "assay_purity": 99.2,
-            "degradation_rate_per_month": 0.001,
-            "associated_drugs": ["Amphotericin B", "Doxorubicin"],
-            "primary_attributed_drug": "Amphotericin B",
+            "dataset_id": "DS-FSI-ISFR-2023-FOREST-COVER",
+            "dataset_name": "Forest Survey of India Maharashtra 2023",
+            "owner": "Ansh Gupta",
+            "custodian": "Forest Department",
+            "source": "FSI Statutory Publication ISBN 978-81-950073-9-4",
+            "provenance": "Government Gazette Publication",
+            "schema": {"columns": ["district", "forest_cover_sqkm"]},
+            "mdu_schema_ref": "mdu://ontology/environmental/v1.0/forest.schema.json",
+            "classification": "CANONICAL",
+            "sensitivity": "PUBLIC",
+            "access_policy": "POLICY-VANA-01",
+            "allowed_consumers": ["VANA", "FIN", "BHIV_CORE"],
+            "intended_use": "Forest cover monitoring and carbon underwriting",
+            "fingerprint": "f" * 64,
+            "lifecycle_status": "ACTIVE",
+            "approval_authority": "MASTERDB_CONSTITUTIONAL_COUNCIL",
+            "quality_status": "VALIDATED",
             "is_synthetic": False
         },
-        "query_drug": "Amphotericin B"
+        "governance_dimension": "schema_and_canonical_integrity"
     }
     resp = client.post("/api/v1/review/evaluate", json=payload, headers=headers)
     assert resp.status_code == 200

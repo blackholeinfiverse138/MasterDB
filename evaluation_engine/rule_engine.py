@@ -508,7 +508,9 @@ class MasterDBRuleEngine:
         candidate_name: str,
         capability_name: str,
         payload: Dict[str, Any],
-        query_drug: Optional[str] = None
+        governance_dimension: Optional[str] = None,
+        query_drug: Optional[str] = None,
+        **kwargs: Any
     ) -> EvaluationRubric:
         if "dataset_id" in payload:
             return self.compute_evaluation_rubric(payload)

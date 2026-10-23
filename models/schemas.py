@@ -1,6 +1,10 @@
 """
-Strict Pydantic Schema Definitions for Biotech & MasterDB Governance
-=====================================================================
+Strict Pydantic Schema Definitions for MasterDB Convergence Governance
+======================================================================
+Task ID: T-GOV-F01
+Candidate: Ansh Gupta (Product Governance: BHIV)
+Authority: MasterDB Data Governance & Constitutional Controls
+
 All models enforce ConfigDict(extra="forbid") to eliminate schema_violation risks.
 """
 from typing import Dict, Any, List, Optional
@@ -13,17 +17,23 @@ class StrictBaseModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class BiotechAuditRequest(StrictBaseModel):
-    task_id: str = Field(..., min_length=3, max_length=100, description="Task identifier (e.g. T-GOV-F01)")
-    candidate_name: str = Field(..., min_length=2, max_length=50, description="Candidate stream owner (e.g. Sara, Shamit)")
-    capability_name: str = Field(..., min_length=3, max_length=100, description="Stream capability name")
+class MasterDBAuditRequest(StrictBaseModel):
+    task_id: str = Field(default="T-GOV-F01", min_length=3, max_length=100, description="Task identifier (e.g. T-GOV-F01)")
+    candidate_name: str = Field(default="Ansh Gupta", min_length=2, max_length=50, description="Candidate stream owner")
+    capability_name: str = Field(default="MasterDB Convergence", min_length=3, max_length=100, description="Stream capability name")
     payload: Dict[str, Any] = Field(..., description="Audit observation payload")
-    query_drug: Optional[str] = Field(default=None, description="Query drug for attribution testing")
+    governance_dimension: Optional[str] = Field(default=None, description="Governance evaluation dimension")
+    query_drug: Optional[str] = Field(default=None, description="Legacy parameter for backward compatibility")
 
 
-class BiotechEvaluationRequest(StrictBaseModel):
+class MasterDBEvaluationRequest(StrictBaseModel):
     rule_name: str = Field(..., min_length=3, max_length=100, description="Name of rule to evaluate")
     payload: Dict[str, Any] = Field(..., description="Payload to evaluate against rule")
+
+
+# Backward compatibility aliases
+BiotechAuditRequest = MasterDBAuditRequest
+BiotechEvaluationRequest = MasterDBEvaluationRequest
 
 
 class DisagreementRecordRequest(StrictBaseModel):
@@ -34,7 +44,7 @@ class DisagreementRecordRequest(StrictBaseModel):
 
 
 class EntityExtractionRequest(StrictBaseModel):
-    text: str = Field(..., min_length=3, max_length=5000, description="Biomedical or regulatory text to parse")
+    text: str = Field(..., min_length=3, max_length=5000, description="Governance or schema text to parse")
     query_id: Optional[str] = Field(default=None, description="Optional query tracking ID")
 
 
@@ -42,7 +52,7 @@ class PravahStreamEventRequest(StrictBaseModel):
     trace_id: str = Field(..., min_length=4, max_length=128, description="Distributed trace ID")
     event_type: PravahEventType = Field(..., description="Canonical Pravah event type")
     payload: Dict[str, Any] = Field(..., description="Event payload data")
-    source_system: str = Field(default="BIOTECH", min_length=2, max_length=64, description="Originating system")
+    source_system: str = Field(default="MASTERDB", min_length=2, max_length=64, description="Originating system")
     destination: str = Field(default="PRAVAH_REPLAY_LEDGER", min_length=2, max_length=64, description="Target subsystem")
 
 

@@ -1,8 +1,13 @@
 """
-Ecosystem Integration & Upstream Synchronization Adapter
-==========================================================
+MasterDB Ecosystem Integration & Upstream Synchronization Adapter
+==================================================================
+Task ID: T-GOV-F01
+Candidate: Ansh Gupta (Product Governance: BHIV)
+Authority: MasterDB Data Governance & Constitutional Controls
+
 Synchronizes evaluation outcomes, Pravah replay states, and OCC transitions
-between Biotech, MasterDB, and the Parikshak production database.
+between MasterDB, BHIV Ecosystem subsystems (MDU, TANTRA, Bucket, Pravah,
+InsightFlow, BharatMala, VANA, FIN), and the Parikshak production database.
 """
 from typing import Dict, Any, Optional
 import os
@@ -21,7 +26,7 @@ class MasterDBIntegrationAdapter:
     def ping(self) -> Dict[str, Any]:
         """Verifies MasterDB connectivity."""
         try:
-            resp = requests.get(f"{self.endpoint_url}/production/health", timeout=5)
+            resp = requests.get(f"{self.endpoint_url}/health", timeout=5)
             if resp.status_code == 200:
                 return {"status": "connected", "details": resp.json()}
         except Exception as e:
