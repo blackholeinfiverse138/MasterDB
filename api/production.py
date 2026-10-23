@@ -238,6 +238,9 @@ app.add_middleware(
 )
 app.add_middleware(ErrorBoundaryMiddleware)
 
+from api.review_routes import router as review_router
+app.include_router(review_router)
+
 
 # ---------------------------------------------------------------------------
 # Custom Request Validation Error Handler (Strict Schema Compliance)

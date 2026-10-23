@@ -1,4 +1,32 @@
-# REVIEW PACKET: ANSH BHIV vNEXT MASTERDB CONVERGENCE & FIN / VANA FULL SYSTEM HARDENING (T-GOV-F01)
+# REVIEW PACKET: ANSH BHIV vNEXT MASTERDB CONVERGENCE & FIN / VANA FULL SYSTEM HARDENING (T-GOV-F01 & T-GOV-002)
+
+## ENTRY POINT
+
+The primary microservice entry point file is api/production.py which mounts FastAPI application routes, error boundary middleware, and security dependencies. Production review routes and execution pipelines are exposed via api/review_routes.py and api/production.py with strict schema validation and role-based access control.
+
+## CORE FLOW
+
+The evaluation pipeline processes task submissions through sequential deterministic verification stages:
+1. Hard Gate Step: Review packet structure and schema verification rules validate candidate deliverables without unpinned dependencies.
+2. Rule Engine: Evaluates dataset schemas, synthetic quarantine, and Section 8 scientific boundaries to generate deterministic score metrics.
+3. Flow Orchestration: Coordinates the 9-stage Day 3 convergence lifecycle and manages Section 16 independent audit disagreement disputes.
+4. Concurrency & Streaming: Optimistic Concurrency Control (OCC) enforces version transitions while the Pravah replay engine logs append-only SHA-256 event chains.
+
+## LIVE FLOW
+
+Live task submissions arrive via HTTP POST request to the /production/biotech/audit and /api/v1/review/evaluate endpoints with candidate payload data. The service evaluates the submission against architectural standards and returns an immediate HTTP response containing deterministic score, review verdict, failure reasons, and next task proposals.
+
+## OUTPUT SAMPLE
+
+```json
+{
+  "evaluation_result": "PASS",
+  "failure_type": null,
+  "trace_id": "trace-masterdb-convergence-001"
+}
+```
+
+---
 
 **Task ID:** `T-GOV-F01`  
 **Task Title:** Remediate Incomplete & Harden Ansh FIN / VANA Full System Completion with Real Data Integration Architecture  

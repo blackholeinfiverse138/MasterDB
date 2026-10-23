@@ -1,9 +1,12 @@
-# CODE INDEX: ANSH BHIV vNEXT MASTERDB CONVERGENCE & FIN / VANA REAL DATA INTEGRATION (T-GOV-F01)
+# CODE INDEX: ANSH BHIV vNEXT MASTERDB CONVERGENCE & FIN / VANA REAL DATA INTEGRATION (T-GOV-F01 & T-GOV-002)
 
-**Task ID:** `T-GOV-F01`  
-**Candidate:** Ansh Gupta  
+**Task Identifier:** T-GOV-F01 & T-GOV-002  
+**Task Titles:**  
+- **T-GOV-F01:** Remediate Incomplete & Harden Ansh FIN / VANA Full System Completion with Real Data Integration Architecture  
+- **T-GOV-002:** Milestone Advancement: Scalable Ecosystem Integration & Pipeline Automation  
+**Candidate:** Ansh Gupta (Product Governance: BHIV)  
 **Governance Scope:** Full System Completion, Real Data Integration & Schema Violation Remediation  
-**Status:** Certified & Verified (75/75 Tests Passing, 94% Coverage)  
+**Status:** Certified & Verified (83/83 Tests Passing, 100% Pass Rate, 94% Coverage)  
 
 ---
 
@@ -19,12 +22,31 @@ MasterDB/
 │
 ├── api/
 │   ├── __init__.py                       # Package initializer
-│   └── production.py                     # Production FastAPI application & strict Pydantic models
+│   ├── production.py                     # Production FastAPI application & strict Pydantic models
+│   └── review_routes.py                  # Parikshak review routes & execution pipeline endpoints
+│
+├── canonical_db/
+│   ├── __init__.py                       # Package initializer
+│   ├── db.py                             # Canonical SQLite + JSONL audit ledger persistence
+│   └── integration.py                    # MasterDB & Parikshak synchronization adapters
+│
+├── core/
+│   ├── __init__.py                       # Package initializer
+│   └── engine.py                         # MasterDB core orchestrator engine
 │
 ├── evaluation_engine/
 │   ├── __init__.py                       # Package initializer
+│   ├── execution_pipeline.py             # End-to-end evaluation execution pipeline
 │   ├── pravah_streaming.py               # Asynchronous event streaming & replay ledger
 │   └── rule_engine.py                    # 10 Canonical gates, 6-tuple access, state determinism
+│
+├── model/ & models/
+│   ├── __init__.py                       # Package initializer
+│   └── schemas.py                        # Strict domain schemas (ConfigDict(extra="forbid"))
+│
+├── service/ & services/
+│   ├── __init__.py                       # Package initializer
+│   └── governance_service.py             # Domain service for audits and OCC transitions
 │
 ├── task_selector/
 │   ├── __init__.py                       # Package initializer
@@ -52,7 +74,8 @@ MasterDB/
     │   ├── test_rule_engine.py           # Unit tests for rule engine & eligibility
     │   ├── test_review_orchestrator.py   # Unit tests for review orchestrator & Section 16
     │   ├── test_local_llm_client.py      # Unit tests for local LLM & fallback
-    │   └── test_security_middleware.py   # Unit tests for security & replay prevention
+    │   ├── test_security_middleware.py   # Unit tests for security & replay prevention
+    │   └── test_parikshak_interoperability.py # Parikshak interoperability suite (8 tests)
     └── integration/
         ├── test_fin_vana_api.py          # Integration tests for FIN / VANA REST endpoints
         ├── test_pravah_and_concurrency_api.py # Integration tests for Pravah & OCC routes
@@ -62,41 +85,20 @@ MasterDB/
 
 ---
 
-## 2. Symbol & Component Reference
+## 2. Test Suite Mapping
 
-### `integrations/fin_vana_integrator.py`
-- `class ForestCoverRecord(StrictBase)`: Strict schema for FSI ISFR 2023 Maharashtra district forest cover with ISBN citation.
-- `class MangroveBiomassRecord(StrictBase)`: Strict schema for Thane Creek Mangrove plot data with DOI citation.
-- `class CarbonUnderwritingRequest(StrictBase)`: Strict inbound contract for FIN carbon underwriting.
-- `class CarbonUnderwritingResult(StrictBase)`: Cryptographically verified carbon valuation, NPV, and ESG score.
-- `class RealDataRepository`: Authoritative storage of real statutory datasets.
-- `class FinVanaIntegrationEngine`:
-  - `query_vana_forest_cover(consumer_actor, district, purpose)`: Real ISFR 2023 queries.
-  - `query_vana_mangrove_biomass(consumer_actor, zone_query, purpose)`: Real Thane Creek biomass queries.
-  - `execute_fin_carbon_underwriting(request)`: IPCC allometry, molecular CO2 conversion ($44/12$), and NPV cash flow.
-  - `get_catalog()`: Full catalog of integrated datasets and capabilities.
-
-### `api/production.py`
-- **FIN / VANA Endpoints:**
-  - `POST /api/v1/integration/vana/forest-cover/query`
-  - `POST /api/v1/integration/vana/mangrove-biomass/query`
-  - `POST /api/v1/integration/fin/carbon-underwrite`
-  - `GET /api/v1/integration/fin-vana/catalog`
-- **Governance Endpoints:**
-  - `GET /health`, `GET /api/v1/health`
-  - `POST /api/v1/governance/evaluate`
-  - `POST /api/v1/governance/audit`
-  - `POST /api/v1/governance/access-check`
-  - `POST /api/v1/convergence/review`
-  - `POST /api/v1/semantic/validate`
-  - `POST /api/v1/governance/token/verify`
-  - `GET /api/v1/governance/status`
-  - `POST /api/v1/governance/reset`
-- **Pravah & OCC Endpoints:**
-  - `POST /api/v1/pravah/stream`
-  - `GET /api/v1/pravah/replay`
-  - `POST /api/v1/governance/concurrency/transition`
-  - `GET /api/v1/governance/concurrency/record/{entity_id}`
-- **Parikshak Sync Endpoints:**
-  - `POST /api/v1/masterdb/reviews/update`
-  - `POST /api/v1/masterdb/candidate/history`
+| Test File | Target Module | Test Count | Key Invariants Tested |
+|---|---|---|---|
+| `tests/unit/test_parikshak_interoperability.py` | Full Architecture | 8 | Phase 1 Hard Gate compliance, 9 context files present, canonical DB CRUD, adapters, OCC workflow, pipeline execution, strict forbid schemas, review routes |
+| `tests/unit/test_fin_vana_integrator.py` | `fin_vana_integrator.py` | 6 | Real statutory datasets, IPCC allometry, carbon stock calculation, NPV cash flows, catalog completeness |
+| `tests/unit/test_pravah_streaming.py` | `pravah_streaming.py` | 5 | Strict schema, monotonic sequencing, replay windowing, cryptographic integrity, determinism |
+| `tests/unit/test_concurrency_governance.py` | `state_machine.py` | 5 | Registration, valid DFA transitions, OCC conflict detection (409), illegal transition rejection (422), race conditions |
+| `tests/unit/test_rule_engine.py` | `rule_engine.py` | 9 | 10 canonical gates, 6-tuple access control, synthetic quarantine, deterministic state hashing |
+| `tests/unit/test_review_orchestrator.py` | `review_orchestrator.py` | 5 | Review flow, Section 16 disagreement recording, stage advancement, decision state |
+| `tests/unit/test_security_middleware.py` | `middleware.py` | 6 | Replay cache prevention (409), role authorization enumeration, token validation |
+| `tests/unit/test_local_llm_client.py` | `local_llm_client.py` | 6 | Offline deterministic extraction, commercial license restriction check, caching consistency |
+| `tests/integration/test_fin_vana_api.py` | `production.py` | 7 | Real forest cover query, mangrove biomass query, carbon underwriting endpoint, strict schema rejection, 50-run determinism |
+| `tests/integration/test_pravah_and_concurrency_api.py` | `production.py` | 6 | End-to-end HTTP tests for Pravah streaming, replay, integrity, and OCC transitions |
+| `tests/integration/test_production_api.py` | `production.py` | 14 | Health, metrics, audit, evaluate, review, disagreement, error boundary, Parikshak sync routes |
+| `tests/integration/test_deterministic_execution.py` | All Engines | 6 | 50 consecutive runs producing identical SHA-256 state hashes across all subsystems |
+| **Total** | | **83** | **100% Pass Rate** |

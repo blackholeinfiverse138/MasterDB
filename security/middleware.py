@@ -35,6 +35,9 @@ class UserRole(str, Enum):
     CONSUMER = "consumer"
     MASTERDB_ADMIN = "masterdb_admin"
     ANSH_GOV_LEAD = "ansh_gov_lead"
+    ANSH_AUDIT_LEAD = "ansh_audit_lead"
+    REVIEWER = "reviewer"
+    OPERATOR = "operator"
     PARIKSHAK_EVALUATOR = "parikshak_evaluator"
 
 
