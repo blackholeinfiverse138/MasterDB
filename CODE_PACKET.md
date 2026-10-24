@@ -22,7 +22,7 @@
 | `task_selector/review_orchestrator.py` | Source | 9-stage Day 3 convergence lifecycle coordinator and Section 16 independent audit disagreement registrar. |
 | `task_selector/state_machine.py` | Source | Optimistic Concurrency Control (OCC) engine enforcing deterministic DFA lifecycle state transitions. |
 | `evaluation_engine/pravah_streaming.py` | Source | Pravah replay engine maintaining monotonic sequencing and SHA-256 linked cryptographic audit trails. |
-| `canonical_db/db.py` & `integration.py` | Source | Canonical SQLite + JSONL audit ledger persistence and BHIV ecosystem synchronization adapters. |
+| `canonical_db/db.py` & `integration.py` | Source | Canonical SQLite + JSONL audit ledger persistence and BHIV ecosystem synchronization adapters with JWT HS256 auth, 8 target DB ingestion dispatch & certification. |
 | `core/engine.py` & `core/__init__.py` | Source | MasterDB core operational wrapper and package exports. |
 | `models/schemas.py` & `model/schemas.py` | Source | Strict Pydantic v2 models (`ConfigDict(extra="forbid")`) eliminating recurring schema violations. |
 | `services/governance_service.py` & `service/governance_service.py` | Source | Enterprise domain service orchestrating audit submissions, Pravah streaming, and OCC transitions. |

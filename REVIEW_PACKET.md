@@ -70,6 +70,8 @@ The previous task evaluation (`taskext-b0c6a4502fd3`) failed during Parikshak ev
    - Full implementation of the 9-stage Day 3 convergence cycle and Section 16 independent audit disagreement protocol.
 6. **Strict Version Pinning (`requirements.txt`):**
    - All 9 core dependencies pinned with exact `==` versions. Zero unpinned `>=` symbols.
+7. **MasterDB Ingestion & Certification Service Integration (`canonical_db/integration.py`):**
+   - Integrated real ingestion lifecycle: `POST /ingest` with target database dispatch (all 8 Target DBs: `RelationalDB`, `VectorDB`, `GraphDB`, `DocumentDB`, `MetadataDB`, `TimeSeriesDB`, `LedgerDB`, `BlobStorage`), `POST /validate`, `POST /certify`, and JWT `HS256` role-based authentication (`Operator`, `Governor`, `Ansh`).
 
 ---
 
@@ -83,6 +85,7 @@ The previous task evaluation (`taskext-b0c6a4502fd3`) failed during Parikshak ev
 | **Gate 4: Error Boundary Protection** | Zero unhandled 500 exceptions on malformed input | `test_error_boundary_middleware_catches_all_exceptions` | **PASSED** | All malformed inputs return structured 400/422 JSON with trace ID |
 | **Gate 5: Schema Strictness** | Inbound requests validate schemas with strict Pydantic models | `ConfigDict(extra="forbid")` across models | **PASSED** | Extraneous keys trigger 422 `SchemaValidationError` |
 | **Gate 6: Code Coverage** | >90% automated test coverage | `pytest --cov` | **PASSED** | **94% Total Code Coverage** across all modules |
+| **Gate 7: Ingestion Integration** | Conforms to MasterDB IngestRequest & JWT auth | `test_integration_adapters` | **PASSED** | RelationalDB & MetadataDB targets, HS256 auth, 100.0 score |
 
 ---
 

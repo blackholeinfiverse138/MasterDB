@@ -27,7 +27,7 @@ MasterDB/
 ├── canonical_db/
 │   ├── __init__.py                       # Package initializer
 │   ├── db.py                             # Canonical SQLite + JSONL audit ledger persistence
-│   └── integration.py                    # MasterDB & Parikshak synchronization adapters
+│   └── integration.py                    # MasterDB & Parikshak sync adapters, JWT HS256 auth, 8 target DB ingestion dispatch & certification
 │
 ├── core/
 │   ├── __init__.py                       # Package initializer
