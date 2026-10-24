@@ -54,8 +54,23 @@ MasterDB/
 │
 ├── integrations/
 │   ├── __init__.py                       # Package initializer
+│   ├── biotech_sources_governance.py     # Three-Layer Rule & 10 Canonical Eligibility Gates for Biotech / Pharmacovigilance
 │   ├── fin_vana_integrator.py            # FIN / VANA real data integration & carbon underwriting
 │   └── local_llm_client.py               # Offline deterministic LLM client & entity extractor
+│
+├── evidence_packet/
+│   ├── BLOCKERS.md                       # Known dependencies & blockers tracking
+│   ├── cp1_source_exploration.md         # Geospatial CP1 Exit Artifact
+│   └── cp1_biotech_source_exploration.md # Biotech & Pharmacovigilance CP1 Exit Artifact (SHAs, licenses, capabilities)
+│
+├── scripts/
+│   └── test_biotech_sources.sh           # Unified runner executing all 99 tests across 4 cloned sources
+│
+├── sources/                              # [GITIGNORED] Cloned candidate repositories for discovery & inspection
+│   ├── bhiv_pharmacovigilance/           # OpenFDA FAERS pipeline (47/47 tests passing)
+│   ├── shravni_qc_evidence/              # QC Evidence map & conflict resolver (23/23 tests passing)
+│   ├── shamit_drug_discovery/            # Compound pipeline & completeness checker (5/5 tests passing)
+│   └── shyamal_octo_invention/           # Preclinical QC engine & synthetic quarantine (24/24 tests passing)
 │
 ├── security/
 │   ├── __init__.py                       # Package initializer
@@ -76,6 +91,7 @@ MasterDB/
     │   ├── test_security_middleware.py   # Unit tests for security & replay prevention
     │   └── test_parikshak_interoperability.py # Parikshak interoperability suite (8 tests)
     └── integration/
+        ├── test_biotech_sources_governance.py # Biotech 10-gate & synthetic quarantine integration suite (8 tests)
         ├── test_fin_vana_api.py          # Integration tests for FIN / VANA REST endpoints
         ├── test_pravah_and_concurrency_api.py # Integration tests for Pravah & OCC routes
         ├── test_production_api.py        # Integration tests for production API routes
@@ -96,8 +112,11 @@ MasterDB/
 | `tests/unit/test_review_orchestrator.py` | `review_orchestrator.py` | 5 | Review flow, Section 16 disagreement recording, stage advancement, decision state |
 | `tests/unit/test_security_middleware.py` | `middleware.py` | 6 | Replay cache prevention (409), role authorization enumeration, token validation |
 | `tests/unit/test_local_llm_client.py` | `local_llm_client.py` | 6 | Offline deterministic extraction, commercial license restriction check, caching consistency |
+| `tests/integration/test_biotech_sources_governance.py` | `biotech_sources_governance.py` | 8 | 10 Canonical Eligibility Gates, synthetic fixture quarantine (Gate 9), schema column strictness, role RBAC, 50-run determinism |
 | `tests/integration/test_fin_vana_api.py` | `production.py` | 7 | Real forest cover query, mangrove biomass query, carbon underwriting endpoint, strict schema rejection, 50-run determinism |
 | `tests/integration/test_pravah_and_concurrency_api.py` | `production.py` | 6 | End-to-end HTTP tests for Pravah streaming, replay, integrity, and OCC transitions |
 | `tests/integration/test_production_api.py` | `production.py` | 14 | Health, metrics, audit, evaluate, review, disagreement, error boundary, Parikshak sync routes |
 | `tests/integration/test_deterministic_execution.py` | All Engines | 6 | 50 consecutive runs producing identical SHA-256 state hashes across all subsystems |
-| **Total** | | **83** | **100% Pass Rate** |
+| **MasterDB Core Total** | | **91** | **100% Pass Rate** |
+| **External Sources (`scripts/test_biotech_sources.sh`)** | 4 Repositories in `sources/` | **99** | **100% Pass Rate (47 + 23 + 5 + 24)** |
+| **Combined Grand Total** | | **190** | **100% Green Ecosystem-Wide Pass Rate** |
